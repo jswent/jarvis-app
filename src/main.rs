@@ -1,10 +1,10 @@
 #![allow(unused)]
 
-use users::{get_user_by_uid, get_current_uid};
 use std::env;
 use std::fs::File;
 use std::io::prelude::*;
 use std::fs;
+mod mods;
 
 fn print_jarvis_text() {
     let file = std::fs::read_to_string("/etc/jarvis/server_ver").expect("could not read file");
@@ -14,10 +14,8 @@ fn print_jarvis_text() {
 }
 
 fn main() {
-    //let args = Cli::from_args();
-    //println!("{}", args.len());
+    //import all arguments given on command line into args vector
     let args: Vec<String> = env::args().collect();
-    //println!("{}", args.len());
 
     if args.len() > 1 {
         let mut s = &args[1];
@@ -34,8 +32,7 @@ fn main() {
                 println!("{}", file_temp);
             }
             else if args.len() >= 3 && (s.eq("change") || s.eq("--change") || s.eq("-c")) {
-                let user = get_user_by_uid(get_current_uid()).unwrap();
-                if user.name() == "root" {
+                if mods::auth::check_root() == true {
                     if args.len() == 3 {
                         panic!("Usage: jarvis version change [NEW_VER]");
                     }
@@ -62,6 +59,78 @@ fn main() {
             file_temp.truncate(file_temp.len() - 1);
             println!("\n{}", file_temp);
             
+        }
+        else if args.len() >= 2 && (s.eq("pwman") || s.eq("--pwman") || s.eq("-p")) {
+            if args.len() == 2 {
+                println!("Welcome to JARVIS password manager!");
+            }
+        }
+        else if args.len() >= 2 && (s.eq("auth") || s.eq("--auth") || s.eq("-a")) {
+            if args.len() > 2 {
+                s = &args[2];
+            }
+            
+            if args.len() == 2 {
+                println!("Usage: jarvis --auth [--change, --output, --help]");
+            }
+            else if args.len() >= 3 && (s.eq("change") || s.eq("--change") || s.eq("-c")) {
+                if args.len() > 3 {
+                    s = &args[3];
+                }
+                
+                if args.len() == 3 {
+                    println!("Usage: jarvis --auth --change [--internal, --external]");
+                }
+                else if args.len() >= 4 && (s.eq("internal") || s.eq("--internal") || s.eq("-i")) {
+                    if args.len() > 4 {
+                        s = &args[4];
+                    }
+
+                    if args.len() == 4 {
+                        println!("Usage jarvis --auth --change --internal [+/-pubkey, +/-pass, +/-root_login]");
+                    }
+                    else if args.len() == 5 {
+                        if mods::auth::check_root() == true {
+                            mods::auth::change_internal(s);
+                        }
+                        else {
+                            println!("ERROR: Invalid permissions");
+                        }
+                    }
+                }
+                else if args.len() >= 4 && (s.eq("external") || s.eq("--external") || s.eq("-e")) {
+                    if args.len() > 4 {
+                        s = &args[4];
+                    }
+                    
+                    if args.len() == 4 {
+                        println!("Usage: jarvis --auth --change --external [+/-pubkey, +/-pass, +/-root_login]");
+                    }
+                    else if args.len() == 5 {
+                        if mods::auth::check_root() == true {
+                            mods::auth::change_external(s);
+                        }
+                        else {
+                            println!("ERROR: Invalid permissions");
+                        }
+                    }
+                }
+                else {
+                    mods::jarvis_messages::unknown_command();
+                }
+            }
+            else if args.len() >= 2 && (s.eq("output") || s.eq("--output") || s.eq("-o")) {
+                mods::auth::status();
+            }
+            else if args.len() >= 2 && (s.eq("help") || s.eq("--help") || s.eq("-h")) {
+                mods::auth::help();
+            }
+            else {
+                mods::jarvis_messages::unknown_command();
+            }
+        }
+        else {
+            mods::jarvis_messages::unknown_command();
         }
     }
     else {
